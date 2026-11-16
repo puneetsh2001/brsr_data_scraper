@@ -1,0 +1,24 @@
+venv/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+
+# regenerable HTTP response cache
+data/cache/
+
+# partial downloads
+*.part
+
+# large or generated data (kept out of git; regenerable by the pipeline or
+# downloaded from the sources). data/reference/ (owner decisions) is tracked.
+data/raw/
+data/processed/
+data/outputs/
+data/failed/
+logs/
+
+# frontend dependencies and build output (npm ci && npm run build)
+frontend/node_modules/
+frontend/dist/

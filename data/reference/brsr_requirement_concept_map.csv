@@ -1,0 +1,104 @@
+requirement_id,pillar,requirement,metric_key,current_concept,dimension_filter,breakdown_axes,expected_unit,applicability_concept,source,notes
+A01,Corporate,CIN,cin,CorporateIdentityNumber,,,,,BRSR_XBRL,Placeholder CINs used by statutory banks (e.g. Z99999ZZ9999ZZZ000000) must be treated as not available
+A02,Corporate,NSE symbol,nse_symbol,NSESymbol,,,,,BRSR_XBRL,Present only in 2026-taxonomy filings; company master holds symbol for all years
+A03,Corporate,BSE scrip code,bse_code,ScripCode,,,,,BRSR_XBRL,
+A04,Corporate,ISIN,isin,ISIN,,,,,BRSR_XBRL,Older taxonomies use the CIN as entity identifier; use master_isin
+A05,Corporate,Paid-up capital,paid_up_capital,ValueOfSharesPaidUp,,,INR,,BRSR_XBRL,
+A06,Corporate,Turnover,turnover,Turnover,,,INR,,BRSR_XBRL,
+A07,Corporate,Revenue from operations,revenue_from_operations,RevenueFromOperations,,,INR,,BRSR_XBRL,
+A08,Corporate,Net worth,net_worth,NetWorth,,,INR,,BRSR_XBRL,
+A09,Corporate,Reporting boundary,reporting_boundary,ReportingBoundary,,,,,BRSR_XBRL,Standalone or consolidated basis
+A10,Corporate,Number of plants (manufacturing locations),plant_locations,NumberOfLocations,LocationAxis=PlantMember,GeographicalAxis,pure,,BRSR_XBRL,BRSR has Plant/Office not manufacturing/service; Plant used as manufacturing proxy
+A11,Corporate,Number of offices (service locations),office_locations,NumberOfLocations,LocationAxis=OfficeMember,GeographicalAxis,pure,,BRSR_XBRL,Office used as service-location proxy
+E01,Environmental,Electricity from renewable sources,electricity_renewable,TotalElectricityConsumptionFromRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,Units vary J/kJ/MJ/GJ; normalise to GJ
+E02,Environmental,Electricity from non-renewable sources,electricity_non_renewable,TotalElectricityConsumptionFromNonRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,
+E03,Environmental,Fuel from renewable sources,fuel_renewable,TotalFuelConsumptionFromRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,
+E04,Environmental,Fuel from non-renewable sources,fuel_non_renewable,TotalFuelConsumptionFromNonRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,
+E05,Environmental,Total renewable energy,energy_renewable_total,TotalEnergyConsumedFromRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,
+E06,Environmental,Total non-renewable energy,energy_non_renewable_total,TotalEnergyConsumedFromNonRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,
+E07,Environmental,Total energy consumption,energy_total,TotalEnergyConsumedFromRenewableAndNonRenewableSources,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,Older filings may use TotalEnergyConsumption; see crosswalk
+E07,Environmental,Total energy consumption,energy_total,TotalEnergyConsumption,,,energy,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,Fallback concept used by 2021-09-30 and 2023-06-30 taxonomy filings
+E08,Environmental,Energy intensity per rupee of turnover,energy_intensity_per_rupee,EnergyIntensityPerRupeeOfTurnover,,,energy_per_inr,WhetherDetailsOfTotalEnergyConsumptionAndEnergyIntensityApplicableToTheCompany,BRSR_XBRL,Per INR; some filers report per crore - validate against energy/turnover
+E09,Environmental,Water withdrawal - surface water,water_surface,WaterWithdrawalBySurfaceWater,,,kilolitre,,BRSR_XBRL,
+E10,Environmental,Water withdrawal - groundwater,water_groundwater,WaterWithdrawalByGroundwater,,,kilolitre,,BRSR_XBRL,
+E11,Environmental,Water withdrawal - third party,water_third_party,WaterWithdrawalByThirdPartyWater,,,kilolitre,,BRSR_XBRL,
+E12,Environmental,Water withdrawal - seawater/desalinated,water_seawater,WaterWithdrawalBySeawaterOrDesalinatedWater,,,kilolitre,,BRSR_XBRL,
+E13,Environmental,Water withdrawal - others,water_others,WaterWithdrawalByOthers,,,kilolitre,,BRSR_XBRL,
+E14,Environmental,Total water withdrawal,water_withdrawal_total,TotalVolumeOfWaterWithdrawal,,,kilolitre,,BRSR_XBRL,
+E15,Environmental,Total water consumption,water_consumption_total,TotalVolumeOfWaterConsumption,,,kilolitre,,BRSR_XBRL,
+E16,Environmental,Water intensity per rupee of turnover,water_intensity_per_rupee,WaterIntensityPerRupeeOfTurnover,,,kilolitre_per_inr,,BRSR_XBRL,Denominator choice varies by filer; warn only
+E17,Environmental,Scope 1 emissions,scope1,TotalScope1Emissions,,,tco2e,WhetherDetailsOfGreenHouseGasEmissionsAndItsIntensityIsApplicableToTheCompany,BRSR_XBRL,Unit MtCO2e in filings means metric tonnes (not megatonnes)
+E18,Environmental,Scope 2 emissions,scope2,TotalScope2Emissions,,,tco2e,WhetherDetailsOfGreenHouseGasEmissionsAndItsIntensityIsApplicableToTheCompany,BRSR_XBRL,
+E19,Environmental,Scope 1+2 intensity per rupee of turnover,scope12_intensity_per_rupee,TotalScope1AndScope2EmissionsIntensityPerRupeeOfTurnover,,,tco2e_per_inr,WhetherDetailsOfGreenHouseGasEmissionsAndItsIntensityIsApplicableToTheCompany,BRSR_XBRL,
+E20,Environmental,Scope 3 emissions,scope3,TotalScope3Emissions,,,tco2e,WhetherTotalScope3EmissionsAndItsIntensityIsApplicableToTheCompany,BRSR_XBRL,Leadership indicator - voluntary
+E21,Environmental,Plastic waste,waste_plastic,PlasticWaste,,,tonne,,BRSR_XBRL,
+E22,Environmental,E-waste,waste_e_waste,EWaste,,,tonne,,BRSR_XBRL,
+E23,Environmental,Bio-medical waste,waste_bio_medical,BioMedicalWaste,,,tonne,,BRSR_XBRL,
+E24,Environmental,Construction and demolition waste,waste_c_and_d,ConstructionAndDemolitionWaste,,,tonne,,BRSR_XBRL,
+E25,Environmental,Battery waste,waste_battery,BatteryWaste,,,tonne,,BRSR_XBRL,
+E26,Environmental,Radioactive waste,waste_radioactive,RadioactiveWaste,,,tonne,,BRSR_XBRL,
+E27,Environmental,Other hazardous waste,waste_other_hazardous,OtherHazardousWaste,,,tonne,,BRSR_XBRL,
+E28,Environmental,Other non-hazardous waste,waste_other_non_hazardous,OtherNonHazardousWasteGenerated,,,tonne,,BRSR_XBRL,
+E29,Environmental,Total waste generated,waste_generated_total,TotalWasteGenerated,,,tonne,,BRSR_XBRL,
+E30,Environmental,Waste recycled,waste_recycled,WasteRecoveredThroughRecycled,,,tonne,,BRSR_XBRL,
+E31,Environmental,Waste re-used,waste_reused,WasteRecoveredThroughReUsed,,,tonne,,BRSR_XBRL,
+E32,Environmental,Total waste recovered,waste_recovered_total,TotalWasteRecovered,,,tonne,,BRSR_XBRL,
+E33,Environmental,Waste incinerated,waste_incinerated,WasteDisposedByIncineration,,,tonne,,BRSR_XBRL,
+E34,Environmental,Waste sent to landfill,waste_landfill,WasteDisposedByLandfilling,,,tonne,,BRSR_XBRL,
+E35,Environmental,Total waste disposed,waste_disposed_total,TotalWasteDisposed,,,tonne,,BRSR_XBRL,
+S01,Social,Employees and workers headcount,headcount,NumberOfEmployeesOrWorkersIncludingDifferentlyAbled,,DetailsOfEmployeesAndWorkersIncludingDifferentlyAbledAxis;GenderAxis,pure,,BRSR_XBRL,Permanent / other-than-permanent x gender
+S02,Social,Differently abled headcount,headcount_differently_abled,NumberOfDifferentlyAbledEmployeesOrWorkers,,DetailsOFDifferentlyAbledEmployeesAndWorkersAxis;GenderAxis,pure,,BRSR_XBRL,
+S03,Social,Median remuneration - Board of Directors,median_remuneration_bod,MedianOfRemunerationOrSalaryOrWagesOfBoardOfDirectors,,GenderAxis,INR,,BRSR_XBRL,
+S04,Social,Median remuneration - KMP,median_remuneration_kmp,MedianOfRemunerationOrSalaryOrWagesOfKeyManagerialPersonnel,,GenderAxis,INR,,BRSR_XBRL,
+S05,Social,Median remuneration - employees other than BoD and KMP,median_remuneration_employees,MedianOfRemunerationOrSalaryOrWagesOfEmployeesOtherThanBodAndKMP,,GenderAxis,INR,,BRSR_XBRL,
+S06,Social,Median remuneration - workers,median_remuneration_workers,MedianOfRemunerationOrSalaryOrWagesOfWorkers,,GenderAxis,INR,,BRSR_XBRL,0 may mean no workers - check headcount
+S07,Social,Gross wages paid to females,gross_wages_female,GrossWagesPaidToFemale,,,INR,,BRSR_XBRL,Introduced in later taxonomy versions
+S08,Social,Total wages paid,total_wages,TotalWagesPaid,,,INR,,BRSR_XBRL,
+S09,Social,Female wages as share of total wages,female_wage_share,PercentageOfGrossWagesPaidToFemaleToTotalWagesPaid,,,pure,,BRSR_XBRL,Stored as fraction
+S10,Social,Turnover rate (permanent employees/workers),turnover_rate,TurnoverRate,,PermanentEmployeesAndWorkersAxis;GenderAxis,pure,,BRSR_XBRL,Fraction; BRSR has no age-group breakdown
+S11,Social,Lost time injury frequency rate,ltifr,LostTimeInjuryFrequencyRatePerOneMillionPersonHoursWorked,,EmployeesAndWorkersAxis,pure,,BRSR_XBRL,
+S12,Social,Total recordable work-related injuries,recordable_injuries,TotalRecordableWorkRelatedInjuries,,EmployeesAndWorkersAxis,pure,,BRSR_XBRL,
+S13,Social,Fatalities,fatalities,NumberOfFatalities,,EmployeesAndWorkersAxis,pure,,BRSR_XBRL,
+S14,Social,High-consequence injuries excluding fatalities,high_consequence_injuries,HighConsequenceWorkRelatedInjuryOrIllHealthExcludingFatalities,,EmployeesAndWorkersAxis,pure,,BRSR_XBRL,
+S15,Social,Employees/workers trained on health and safety,safety_training_count,NumberOfTrainedEmployeesOrWorkers,TrainingGivenToEmployeesAndWorkersAxis=OnHealthAndSafetyMeasuresMember,EmployeesAndWorkersAxis;GenderAxis,pure,,BRSR_XBRL,BRSR reports persons trained not training hours
+S16,Social,Share trained on health and safety,safety_training_share,PercentageOfTrainedEmployeesOrWorkers,TrainingGivenToEmployeesAndWorkersAxis=OnHealthAndSafetyMeasuresMember,EmployeesAndWorkersAxis;GenderAxis,pure,,BRSR_XBRL,Values above 1 seen - filer error flag
+S17,Social,POSH complaints reported,posh_complaints_reported,TotalComplaintsReportedUnderSexualHarassmentOfWomenAtWorkplace,,,pure,,BRSR_XBRL,
+S18,Social,POSH complaints upheld,posh_complaints_upheld,ComplaintsOnPOSHUpHeld,,,pure,,BRSR_XBRL,
+S19,Social,Sexual harassment complaints filed,posh_complaints_filed,NumberOfComplaintsFiledDuringTheYear,ComplaintsAxis=SexualHarassmentMember,,pure,,BRSR_XBRL,Resolved = filed - pending (derived)
+S20,Social,Sexual harassment complaints pending,posh_complaints_pending,NumberOfComplaintsPendingResolutionAtTheEndOfYear,ComplaintsAxis=SexualHarassmentMember,,pure,,BRSR_XBRL,
+S21,Social,R&R project name,rr_project,NameOfProjectForWhichRehabilitationAndResettlementIsOnGoing,,ProjectsForRehabilitationAndResettlementAxis,,,BRSR_XBRL,Typed dimension - one row per project
+S22,Social,R&R project-affected families,rr_affected_families,NumberOfProjectAffectedFamilies,,ProjectsForRehabilitationAndResettlementAxis,pure,,BRSR_XBRL,
+S23,Social,R&R share of PAFs covered,rr_pafs_covered_share,PercentageOfPAFsCoveredByRehabilitationAndResettlement,,ProjectsForRehabilitationAndResettlementAxis,pure,,BRSR_XBRL,
+S24,Social,CSR applicable,csr_applicable,WhetherCSRIsApplicableAsPerSection135OfCompaniesAct2013,,,,,BRSR_XBRL,
+S25,Social,CSR spend in aspirational districts,csr_aspirational_district_spend,AmountSpentForCSRProjectsUndertaken,,CSRProjectsUndertakenAxis,INR,WhetherCSRIsApplicableAsPerSection135OfCompaniesAct2013,BRSR_XBRL,Aspirational districts only - NOT total CSR spend
+S26,Social,CSR beneficiaries,csr_beneficiaries,NumberOfPersonsBenefittedFromCSRProjects,,CSRProjectsAxis,pure,WhetherCSRIsApplicableAsPerSection135OfCompaniesAct2013,BRSR_XBRL,
+S27,Social,Total CSR expenditure,csr_total_spend,,,,INR,,EXTERNAL_ANNUAL_REPORT_OR_MCA_CSR2,Not in BRSR
+S28,Social,Turnover rate by age group,turnover_rate_by_age,,,,,,NOT_AVAILABLE_IN_BRSR,Only in voluntary sustainability/GRI reports
+G01,Governance,Total board of directors,board_total,TotalNumberOfBoardOfDirectors,,,pure,,BRSR_XBRL,
+G02,Governance,Female board of directors,board_female,NumberOfFemaleBoardOfDirectors,,,pure,,BRSR_XBRL,
+G03,Governance,Female share of board,board_female_share,PercentageOfFemaleBoardOfDirectors,,,pure,,BRSR_XBRL,
+G04,Governance,Independent directors (incl. independent women),board_independent,,,,,,EXTERNAL_NSE_CORPORATE_GOVERNANCE_FILING,Reg 27(2) quarterly CG XBRL
+G05,Governance,Board and committee meetings and attendance,board_meetings_attendance,,,,,,EXTERNAL_NSE_CG_FILING_OR_ANNUAL_REPORT,
+G06,Governance,MD/CEO remuneration vs median,ceo_pay_ratio,,,,,,EXTERNAL_ANNUAL_REPORT_OR_MCA_MGT7,Rule 5(1) ratio
+G07,Governance,Training and awareness programmes held,ngrbc_training_programmes,TotalNumberOfTrainingAndAwarenessProgramsHeld,,SegmentAxis,pure,,BRSR_XBRL,Covers all NGRBC principles - not anti-corruption specific
+G08,Governance,Share of persons covered by awareness programmes,ngrbc_training_coverage,PercentageOfPersonsInRespectiveCategoryCoveredByTheAwarenessProgrammes,,SegmentAxis,pure,,BRSR_XBRL,
+G09,Governance,Anti-corruption policy in place,anti_corruption_policy,DoesTheEntityHaveAnAntiCorruptionOrAntiBriberyPolicy,,,,,BRSR_XBRL,
+G10,Governance,Directors - disciplinary action for bribery/corruption,corruption_cases_directors,NumberOfDirectorsAgainstWhomDisciplinaryActionWasTaken,,,pure,,BRSR_XBRL,
+G11,Governance,KMPs - disciplinary action for bribery/corruption,corruption_cases_kmps,NumberOfKMPsAgainstWhomDisciplinaryActionWasTaken,,,pure,,BRSR_XBRL,
+G12,Governance,Employees - disciplinary action for bribery/corruption,corruption_cases_employees,NumberOfEmployeesAgainstWhomDisciplinaryActionWasTaken,,,pure,,BRSR_XBRL,
+G13,Governance,Workers - disciplinary action for bribery/corruption,corruption_cases_workers,NumberOfWorkersAgainstWhomDisciplinaryActionWasTaken,,,pure,,BRSR_XBRL,
+G14,Governance,Conflict of interest complaints - directors,coi_complaints_directors,NumberOfComplaintsReceivedInRelationToIssuesOfConflictOfInterestOfTheDirectors,,,pure,,BRSR_XBRL,
+G15,Governance,Conflict of interest complaints - KMPs,coi_complaints_kmps,NumberOfComplaintsReceivedInRelationToIssuesOfConflictOfInterestOfTheKMPs,,,pure,,BRSR_XBRL,
+G16,Governance,Stakeholder complaints filed,stakeholder_complaints_filed,NumberOfComplaintsFiledFromStakeHolderGroupDuringTheYear,,StakeHolderGroupFromWhomComplaintIsReceivedAxis;OtherStakeHolderAxis,pure,,BRSR_XBRL,Other-stakeholder rows carry OtherStakeHolderAxis (typed); OtherStakeHolderAxis added 2026-11-12 with owner approval
+G17,Governance,Stakeholder complaints pending,stakeholder_complaints_pending,NumberOfComplaintsPendingFromStakeHolderGroupResolutionAtTheEndOfYear,,StakeHolderGroupFromWhomComplaintIsReceivedAxis;OtherStakeHolderAxis,pure,,BRSR_XBRL,Other-stakeholder rows carry OtherStakeHolderAxis (typed); OtherStakeHolderAxis added 2026-11-12 with owner approval
+G18,Governance,Consumer complaints received,consumer_complaints_received,ConsumerComplaintsReceivedDuringTheYear,,ConsumerComplaintsP9Axis,pure,,BRSR_XBRL,
+G19,Governance,Consumer complaints pending,consumer_complaints_pending,ConsumerComplaintsPendingResolutionAtEndOfYear,,ConsumerComplaintsP9Axis,pure,,BRSR_XBRL,
+G20,Governance,Whistleblower complaints,whistleblower_complaints,,,,,,EXTERNAL_ANNUAL_REPORT,Not separately disclosed in BRSR
+V01,Assurance,BRSR Core assessment/assurance flag,brsr_core_assurance_flag,WhetherTheCompanyHasUndertakenAssessmentOrAssuranceOfTheBRSRCore,,,,,BRSR_XBRL,Pre-2025 taxonomy: boolean reasonable-assurance flag; see crosswalk value translation
+V02,Assurance,Type of assessment or assurance obtained,assurance_type,TypeOfAssessmentOrAssuranceObtain,,,,,BRSR_XBRL,
+V03,Assurance,Assurance provider name,assurance_provider_name,NameOfTheCompanyOrLLPOrFirmOfAssessmentOrAssuranceProvider,,AssessmentOrAssuranceProviderAxis,,,BRSR_XBRL,Typed dimension - one row per provider
+V04,Assurance,Assurance provider ID,assurance_provider_id,CompanyIDOrLLPIDOrFirmIDOfAssessmentOrAssuranceProvider,,AssessmentOrAssuranceProviderAxis,,,BRSR_XBRL,
+V05,Assurance,Assessor/assurer name,assurer_name,NameOfTheAssessorOrAssurer,,AssessmentOrAssuranceProviderAxis,,,BRSR_XBRL,
+V06,Assurance,Assessor/assurer designation,assurer_designation,DesignationOfAssessorOrAssurer,,AssessmentOrAssuranceProviderAxis,,,BRSR_XBRL,
+V07,Assurance,Date of signing by assessor/assurer,assurer_signing_date,DateOfSigningByAssessorOrAssurer,,AssessmentOrAssuranceProviderAxis,,,BRSR_XBRL,
+V08,Assurance,Type of assurance - Section C principle-wise disclosures,assurance_type_section_c,TypeOfAssuranceForSectionCPrincipleWisePerformanceDisclosures,,,,,BRSR_XBRL,

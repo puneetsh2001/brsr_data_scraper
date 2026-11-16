@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BRSR Analytics</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <div class="brand-title">BRSR Analytics</div>
+        <div class="brand-sub">SEBI BRSR disclosures from NSE XBRL filings</div>
+      </div>
+    </div>
+    <div class="selectors">
+      <div class="search" id="company-search"></div>
+      <label class="fy-select">
+        <span>Financial year</span>
+        <select id="fy-select" disabled><option>—</option></select>
+      </label>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <main id="view" class="view" tabindex="-1"></main>
+  <aside id="drawer" class="drawer" aria-hidden="true" aria-label="Value details"></aside>
+  <div id="drawer-backdrop" class="drawer-backdrop"></div>
+  <footer class="footer">
+    Values are shown as filed in the BRSR XBRL filing. Missing values are never shown as zero.
+    Normalised values follow the platform's approved unit rules; unit-ambiguous values are shown as filed, without a normalised value.
+  </footer>
+</body>
+</html>

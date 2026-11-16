@@ -1,0 +1,19 @@
+-- 0005 assurance_and_supplementary down (reverse dependency order).
+DROP TABLE IF EXISTS brsr_staging.xbrl_pdf_crosscheck;
+DROP TABLE IF EXISTS brsr.xbrl_pdf_crosscheck;
+DROP TABLE IF EXISTS brsr_staging.supplementary_coverage;
+DROP TABLE IF EXISTS brsr.supplementary_coverage;
+DROP TABLE IF EXISTS brsr_staging.supplementary_candidate;
+DROP TABLE IF EXISTS brsr.supplementary_candidate;
+DROP TABLE IF EXISTS brsr_staging.supplementary_document;
+DROP TABLE IF EXISTS brsr.supplementary_document;
+DROP TABLE IF EXISTS brsr_staging.assurance_issue;
+DROP TABLE IF EXISTS brsr.assurance_issue;
+DROP TABLE IF EXISTS brsr_staging.assurance_indicator;
+DROP TABLE IF EXISTS brsr.assurance_indicator;
+DROP TABLE IF EXISTS brsr_staging.assurance_provider;
+DROP TABLE IF EXISTS brsr.assurance_provider;
+DROP TABLE IF EXISTS brsr_staging.assurance_fact;
+DROP TABLE IF EXISTS brsr.assurance_fact;
+DROP TABLE IF EXISTS brsr_staging.assurance_engagement;
+DROP TABLE IF EXISTS brsr.assurance_engagement;
