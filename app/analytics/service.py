@@ -26,12 +26,18 @@ Missing record (no filed fact for a metric in a company-year):
                        concept existed in the filing's taxonomy version)
 
 `value` is never 0 unless the filer reported 0; missing values are null.
+
+Every value also carries `publication_status` and `comparable` (see
+app/analytics/publication.py). Only comparable values may be used in charts,
+comparisons and summary calculations; history and compare report `units`
+and `comparable` over comparable values only.
 """
 
 import re
 from collections import OrderedDict
 from decimal import Decimal, InvalidOperation
 
+from app.analytics import publication
 from app.analytics import repository as repo
 
 FY_PATTERN = re.compile(r"^\d{4}-\d{2}$")
@@ -288,7 +294,7 @@ def value_record(r, meta):
                         "context_reference": r["context_reference"],
                         "source_file": r["source_file"]}],
             "decision": r["unit_decision"] or r["scale_decision_id"] or None}
-    return rec
+    return publication.apply(rec, r, publication.policy())
 
 
 def missing_record(meta, fy, year, applicable):
@@ -425,14 +431,16 @@ def history(cur, key, requirement_id, breakdown=""):
                 meta["applicability_concept"])
             series.append({"fiscal_year": fy, "values": [],
                            "missing": missing_record(meta, fy, y, flag)})
-    units = sorted({v["unit"] for s in series for v in s["values"]
-                    if v["unit"]})
+    eligible = [v for s in series for v in s["values"] if v["comparable"]]
+    units = sorted({v["unit"] for v in eligible if v["unit"]})
     return {"company": company_ref(company),
             "metric": {k: meta[k] for k in ("requirement_id", "metric_name",
                                             "pillar", "expected_unit")},
             "breakdown": breakdown, "dimensions": parse_breakdown(breakdown),
             "series": series, "units": units,
             "comparable": len(units) <= 1,
+            "eligible_values": len(eligible),
+            "publication_policy": publication.policy(),
             "note": None if len(units) <= 1 else
             "normalised units differ across years; values are not compared"}
 
@@ -471,13 +479,15 @@ def compare(cur, keys, requirement_id, fy=None, breakdown=""):
                                 "missing": missing_record(
                                     meta, y["fiscal_year"], y, flag)})
         out.append({"company": company_ref(c), "years": entries})
-    units = sorted({v["unit"] for c in out for e in c["years"]
-                    for v in e["values"] if v["unit"]})
+    eligible = [v for c in out for e in c["years"] for v in e["values"] if v["comparable"]]
+    units = sorted({v["unit"] for v in eligible if v["unit"]})
     return {"metric": {k: meta[k] for k in ("requirement_id", "metric_name",
                                             "pillar", "expected_unit")},
             "breakdown": breakdown, "dimensions": parse_breakdown(breakdown),
             "fiscal_year": fy, "companies": out, "units": units,
-            "comparable": len(units) <= 1}
+            "comparable": len(units) <= 1,
+            "eligible_values": len(eligible),
+            "publication_policy": publication.policy()}
 
 
 # ---------------------------------------------------------------- quality
@@ -485,12 +495,14 @@ def data_quality(cur, key, fy):
     company = company_or_404(cur, key)
     year = year_or_404(cur, company, fy)
     full = company_year_metrics(cur, key, fy)
-    statuses, bases = {}, {}
+    statuses, bases, publication_counts = {}, {}, {}
     for g in full["metrics"]:
         for v in g["values"]:
             statuses[v["disclosure_status"]] = \
                 statuses.get(v["disclosure_status"], 0) + 1
             bases[v["value_basis"]] = bases.get(v["value_basis"], 0) + 1
+            publication_counts[v["publication_status"]] = \
+                publication_counts.get(v["publication_status"], 0) + 1
     missing = {}
     for m in full["missing"]:
         missing[m["disclosure_status"]] = \
@@ -511,6 +523,8 @@ def data_quality(cur, key, fy):
     return {"company": company_ref(company), "fiscal_year": fy,
             "filing_status": year["status"], "filing": year["filing"],
             "value_disclosure_status": statuses, "value_basis": bases,
+            "publication_status": publication_counts,
+            "publication_policy": publication.policy(),
             "missing_metrics": missing, "not_normalised_values":
             not_normalised, "review_recommendations": by_status,
             "open_review_items": [r for r in review if r["status"] not in

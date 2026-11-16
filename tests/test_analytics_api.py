@@ -76,6 +76,10 @@ def src():
         "master_isin"]
     pick["candidate"] = first(cy, cy["crosswalk_status"] ==
                               "CANDIDATE_REVIEW")["master_isin"]
+    # Stage 2D: a pending filer scale-error record and a deferred issue
+    pick["scale"] = first(cy, (cy["scale_decision_id"] != "") & (
+        cy["scale_decision_outcome"] != "APPROVED_APPLIED"))["master_isin"]
+    pick["deferred"] = first(cy, cy["deferred_issue_ids"] != "")["master_isin"]
     per_co = scope.groupby("company_id")["fy_slot"].nunique()
     short = per_co[per_co < per_co.max()].index[0]
     pick["short"] = master.loc[master["company_id"] == short, "isin"].item()
@@ -536,3 +540,115 @@ def test_sessions_are_read_only(client):
     with adb.cursor(TEST_DB) as cur:
         with pytest.raises(psycopg2.Error):
             cur.execute("DELETE FROM brsr.company")
+
+
+# ---- publication safeguards (Stage 2D) ----------------------------------------
+PUBLISHED = {"PUBLISHED", "PUBLISHED_APPROVED_DECISION"}
+
+
+def company_values(client, isin, fy):
+    return all_values(get(client, f"/api/companies/{cid(isin)}/years/{fy}"
+                                  "/metrics?include_missing=false"))
+
+
+def test_scale_review_value_is_shown_as_filed_and_not_comparable(client, src,
+                                                                  cy):
+    row = first(cy, (cy["master_isin"] == src["pick"]["scale"])
+                & (cy["scale_decision_id"] != "")
+                & (cy["scale_decision_outcome"] != "APPROVED_APPLIED"))
+    vals = [v for v in company_values(client, row["master_isin"],
+                                      row["fy_slot"])
+            if v["requirement_id"] == row["requirement_id"]
+            and (v.get("scale_review") or {}).get("record_id")
+            == row["scale_decision_id"]]
+    assert vals, row["scale_decision_id"]
+    v = vals[0]
+    assert v["publication_status"] == "PENDING_SCALE_REVIEW"
+    assert v["comparable"] is False
+    assert v["value"] is None and v["value_numeric"] is None
+    assert v["reported_value"] == row["original_value"]    # filed, unchanged
+    assert v["scale_review"]["note"] == "proposal only; not applied"
+    assert v["scale_review"]["proposed_value"] == (
+        row["scale_proposed_value"] or None)
+    if row["normalised_value"]:
+        assert Decimal(v["withheld"]["value"]) == Decimal(
+            row["normalised_value"])
+
+
+def test_deferred_issue_values_are_flagged_never_comparable(client, src, cy):
+    rows = cy[(cy["master_isin"] == src["pick"]["deferred"])
+              & (cy["deferred_issue_ids"] != "")]
+    fy = rows["fy_slot"].iloc[0]
+    vals = [v for v in company_values(client, src["pick"]["deferred"], fy)
+            if v["review"]["deferred_issue_ids"]]
+    assert len(vals) == len(rows[rows["fy_slot"] == fy])
+    for v in vals:
+        assert v["publication_status"] == "DEFERRED_DATA_QUALITY"
+        assert v["comparable"] is False
+        assert v["withheld"] is None          # default policy FLAG: shown
+
+
+def test_deferred_withhold_policy(client, src, cy, monkeypatch):
+    monkeypatch.setenv("BRSR_DEFERRED_TREATMENT", "WITHHOLD")
+    fy = cy[(cy["master_isin"] == src["pick"]["deferred"])
+            & (cy["deferred_issue_ids"] != "")]["fy_slot"].iloc[0]
+    vals = [v for v in company_values(client, src["pick"]["deferred"], fy)
+            if v["review"]["deferred_issue_ids"]]
+    assert vals
+    for v in vals:
+        assert v["value"] is None and v["reported_value"] is None
+        assert "deferred data-quality issue" in v["withheld"]["reason"]
+        assert v["comparable"] is False
+
+
+def test_default_policy_is_reported_as_not_owner_approved(client, src,
+                                                          monkeypatch):
+    monkeypatch.delenv("BRSR_DEFERRED_TREATMENT", raising=False)
+    d = get(client, f"/api/companies/{cid(src['pick']['converted'])}"
+                    "/metrics/E07/history")
+    assert d["publication_policy"]["deferred_issue_treatment"] == "FLAG"
+    assert d["publication_policy"]["owner_approved"] is False
+
+
+def test_only_published_values_are_comparable(client, src):
+    seen = 0
+    for isin in src["isins"]:
+        years = get(client, f"/api/companies/{cid(isin)}/years")["years"]
+        for y in years:
+            r = client.get(f"/api/companies/{cid(isin)}/years/"
+                           f"{y['fiscal_year']}/metrics?include_missing=false")
+            if r.status_code != 200:
+                continue
+            for v in all_values(r.json()):
+                seen += 1
+                assert v["publication_status"] in service.publication.STATUSES
+                if v["comparable"]:
+                    assert v["publication_status"] in PUBLISHED
+                    assert v["value_numeric"] is not None
+                    assert not v["review"]["deferred_issue_ids"]
+                if v["publication_status"] == "PENDING_CROSSWALK_REVIEW":
+                    assert not v["comparable"]
+    assert seen
+
+
+def test_compare_counts_only_comparable_values(client, src, cy):
+    row = first(cy, (cy["master_isin"] == src["pick"]["scale"])
+                & (cy["scale_decision_id"] != "")
+                & (cy["scale_decision_outcome"] != "APPROVED_APPLIED"))
+    keys = ",".join(cid(i) for i in src["isins"])
+    d = get(client, f"/api/compare?metric={row['requirement_id']}"
+                    f"&fy={row['fy_slot']}&companies={keys}")
+    vals = [v for c in d["companies"] for y in c["years"] for v in y["values"]]
+    comparable = [v for v in vals if v["comparable"]]
+    assert d["eligible_values"] == len(comparable)
+    assert set(d["units"]) == {v["unit"] for v in comparable}
+    assert any(v["publication_status"] == "PENDING_SCALE_REVIEW"
+               for v in vals)
+
+
+def test_data_quality_reports_publication_status(client, src):
+    isin = src["pick"]["deferred"]
+    fy = get(client, f"/api/companies/{cid(isin)}/years")["years"][0][
+        "fiscal_year"]
+    d = get(client, f"/api/companies/{cid(isin)}/years/{fy}/data-quality")
+    assert "publication_status" in d and "publication_policy" in d

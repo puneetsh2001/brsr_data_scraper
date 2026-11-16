@@ -1,4 +1,4 @@
-import { BASIS, DISCLOSURE, info } from "../lib/format.js";
+import { BASIS, DISCLOSURE, PUBLICATION, info } from "../lib/format.js";
 
 export function Badge({ table, code }) {
   const [label, cls, title] = info(table, code);
@@ -16,12 +16,17 @@ export function ReviewBadges({ v }) {
   );
 }
 
+const PUBLISHED = new Set(["PUBLISHED", "PUBLISHED_APPROVED_DECISION"]);
+
 export function ValueBadges({ v }) {
+  const pub = v.publication_status;
   return (
     <div className="badges">
       <Badge table={DISCLOSURE} code={v.disclosure_status} />
       {v.value_basis ? <Badge table={BASIS} code={v.value_basis} /> : null}
-      <ReviewBadges v={v} />
+      {pub && !PUBLISHED.has(pub) && pub !== "NOT_NORMALISED" && pub !== "TEXT_VALUE"
+        ? <Badge table={PUBLICATION} code={pub} /> : null}
+      {!pub || PUBLISHED.has(pub) ? <ReviewBadges v={v} /> : null}
     </div>
   );
 }

@@ -15,6 +15,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -30,10 +31,6 @@ CHROME = next((p for p in (
     shutil.which("google-chrome") or "", shutil.which("chromium") or "")
     if p and Path(p).exists()), None)
 DB = "brsr_phase14_test"
-# UIs under test: the React build (/app) and the previous UI (/legacy),
-# kept until the React UI is accepted. Override with BRSR_UI_PATHS.
-UI_PATHS = [p.strip() for p in os.environ.get("BRSR_UI_PATHS", "/app,/legacy").split(",") if p.strip()]
-UI = {"path": UI_PATHS[0]}
 RELIANCE = "C-INE002A01018"
 
 
@@ -142,9 +139,13 @@ class Browser:
         raise AssertionError(f"timed out waiting for {expr}")
 
     def go(self, url, ready="!document.querySelector('.spinner')"):
+        # Page.navigate returns before the new document replaces the old one:
+        # mark the old window and wait until a document without the mark is
+        # loaded; the React app renders after load, so then wait for content
+        self.js("window.__brsrOldDocument = true")
         self.cmd("Page.navigate", {"url": url})
-        time.sleep(0.3)
-        self.wait("document.readyState === 'complete'")
+        self.wait("!window.__brsrOldDocument && document.readyState === 'complete'")
+        self.wait("document.getElementById('view') && document.getElementById('view').children.length > 0")
         self.wait(ready)
         # nested sections load independently; wait until none is loading
         self.wait("!document.querySelector('.spinner')")
@@ -168,18 +169,12 @@ def digits(text):
 
 
 def url(server, route):
-    return f"{server}{UI['path']}/#{route}"
+    """React app URL for a route such as /c/<id>/<fy>/<tab>?<params>."""
+    return f"{server}/app{route}"
 
 
 ROWS = """[...document.querySelectorAll(%s)].map(tr =>
   [...tr.querySelectorAll('td')].map(td => td.innerText.trim()))"""
-
-
-@pytest.fixture(scope="module", params=UI_PATHS, autouse=True)
-def ui_path(request):
-    """Run every browser test against each UI."""
-    UI["path"] = request.param
-    yield request.param
 
 
 # Python mirror of unitLabel() in the UI's format module (same table); the
@@ -402,7 +397,7 @@ def test_drawer_explains_a_calculated_value(server, browser):
     assert "CALCULATION" in text.upper() and v["calculation"]["formula"] in text
     assert "[object" not in text and "\nnull" not in text
     # navigating closes the drawer
-    browser.js("location.hash = location.hash.replace('environmental', 'overview')")
+    browser.js("document.querySelector('#tabs a[data-tab=\"overview\"]').click()")
     browser.wait("!document.getElementById('drawer').classList.contains('open')")
 
 
@@ -413,7 +408,7 @@ def test_search_and_select(server, browser):
       i.value = {json.dumps(target['nse_symbol'])}; i.dispatchEvent(new Event('input')); }})()""")
     browser.wait("document.querySelector('.search-results button')")
     browser.js("document.querySelector('.search-results button').click()")
-    browser.wait(f"location.hash.includes({json.dumps(target['company_id'])})")
+    browser.wait(f"location.pathname.includes({json.dumps(target['company_id'])})")
     browser.wait("document.querySelector('.identity h1')")
     assert browser.js("document.querySelector('.identity h1').innerText") \
         == target["legal_name"]
@@ -556,9 +551,9 @@ def test_compare_breakdown_options_come_from_the_data(server, browser):
 
 def test_trends_breakdown_defaults_and_requests(server, browser):
     browser.go(url(server, f"/c/{RELIANCE}/2024-25/trends?metric=S01"))
-    browser.wait("location.hash.includes('breakdown=')")
+    browser.wait("location.search.includes('breakdown=')")
     browser.wait("document.querySelector('.table-wrap')")
-    bd = browser.js("decodeURIComponent(new URLSearchParams(location.hash.split('?')[1]).get('breakdown'))")
+    bd = browser.js("new URLSearchParams(location.search).get('breakdown')")
     assert bd != ""                                            # first real breakdown
     api = http_json(f"{server}/api/companies/{RELIANCE}/metrics/S01/history?breakdown="
                     + urllib.request.quote(bd))
@@ -615,6 +610,81 @@ def test_reported_zero_and_missing_are_distinct(server, browser):
     for m in api["missing"]:
         if m["pillar"] == "Environmental":
             assert m["missing_reason"] in text
+
+
+# ---- React Router: history URLs, refresh, back/forward, deep links -------------
+
+def http_status(u):
+    try:
+        with urllib.request.urlopen(u, timeout=30) as r:
+            return r.status, r.headers.get("Content-Type", ""), r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, e.headers.get("Content-Type", ""), ""
+
+
+def test_server_returns_the_app_for_client_routes(server):
+    for route in ("/", f"/c/{RELIANCE}", f"/c/{RELIANCE}/2024-25/social",
+                  f"/c/{RELIANCE}/2024-25/compare?metric=E07&fy=2024-25", "/no/such/page"):
+        status, ctype, body = http_status(f"{server}/app{route}")
+        assert status == 200 and "text/html" in ctype and '<div id="root">' in body, route
+    status, _, _ = http_status(f"{server}/app/assets/missing-file.js")
+    assert status == 404                                   # assets never fall back
+    status, _, body = http_status(f"{server}/")
+    assert status == 200 and '<div id="root">' in body     # / redirects to /app/
+
+
+def test_previous_ui_is_not_served(server):
+    for path in ("/legacy/", "/legacy/js/app.js", "/app/js/app.js", "/app/js/views.js", "/app/styles.css"):
+        status, _, _ = http_status(f"{server}{path}")
+        assert status == 404, path
+    _, _, html = http_status(f"{server}/app/")
+    assert "js/app.js" not in html and "styles.css" not in html
+    assert "/app/assets/" in html
+
+
+def test_deep_link_and_refresh_keep_the_screen(server, browser):
+    route = f"/c/{RELIANCE}/2024-25/trends?metric=E07&breakdown="
+    browser.go(url(server, route))
+    browser.wait("document.querySelector('.table-wrap')")
+    before = browser.js("location.pathname + location.search")
+    assert before == f"/app/c/{RELIANCE}/2024-25/trends?metric=E07&breakdown="
+    browser.js("window.__brsrOldDocument = true")
+    browser.cmd("Page.reload", {"ignoreCache": True})
+    browser.wait("!window.__brsrOldDocument && document.readyState === 'complete' && document.querySelector('.table-wrap')")
+    browser.wait("!document.querySelector('.spinner')")
+    assert browser.js("location.pathname + location.search") == before
+    assert browser.js("document.querySelector('#fy-select').value") == "2024-25"
+    assert "Total energy consumption" in browser.js("document.getElementById('view').innerText")
+
+
+def test_back_and_forward_navigation(server, browser):
+    browser.go(url(server, f"/c/{RELIANCE}/2024-25/overview"))
+    browser.js("document.querySelector('#tabs a[data-tab=\"social\"]').click()")
+    browser.wait("location.pathname.endsWith('/social') && !document.querySelector('.spinner')")
+    browser.js("document.querySelector('#fy-select').value = '2023-24';"
+               "document.querySelector('#fy-select').dispatchEvent(new Event('change', {bubbles: true}))")
+    browser.wait("location.pathname.endsWith('/2023-24/social') && !document.querySelector('.spinner')")
+    browser.js("history.back()")
+    browser.wait("location.pathname.endsWith('/2024-25/social') && !document.querySelector('.spinner')")
+    assert browser.js("document.querySelector('#fy-select').value") == "2024-25"
+    browser.js("history.back()")
+    browser.wait("location.pathname.endsWith('/2024-25/overview') && document.querySelector('.identity h1')")
+    browser.js("history.forward()")
+    browser.wait("location.pathname.endsWith('/2024-25/social') && !document.querySelector('.spinner')")
+    assert browser.js("document.querySelector('#tabs a.active').dataset.tab") == "social"
+
+
+def test_company_link_resolves_latest_year(server, browser):
+    years = [y for y in http_json(f"{server}/api/companies/{RELIANCE}/years")["years"] if y["status"] == "PROCESSED"]
+    browser.go(url(server, f"/c/{RELIANCE}"))
+    browser.wait("location.pathname.endsWith('/overview')")
+    assert browser.js("location.pathname") == f"/app/c/{RELIANCE}/{years[-1]['fiscal_year']}/overview"
+
+
+def test_unknown_routes_show_not_found(server, browser):
+    for route in (f"/c/{RELIANCE}/2024-25/nonsense", "/no/such/page"):
+        browser.go(url(server, route))
+        assert "Page not found" in browser.js("document.getElementById('view').innerText"), route
 
 
 def test_no_javascript_errors(browser):

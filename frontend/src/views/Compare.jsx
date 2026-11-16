@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { api } from "../lib/api.js";
-import { DISCLOSURE, breakdownLabel, displayValue, fy, unitLabel } from "../lib/format.js";
+import { DISCLOSURE, PUBLICATION, breakdownLabel, displayValue, fy, isComparable, unitLabel } from "../lib/format.js";
 import { useAsync } from "../lib/useAsync.js";
 import { useDrawer } from "../lib/drawer.js";
 import { AsyncView, Badge, Empty, ErrorState, Loading, SectionTitle, ValueBadges } from "../components/common.jsx";
@@ -8,7 +8,7 @@ import { BarChart } from "../components/BarChart.jsx";
 import { SearchBox } from "../components/SearchBox.jsx";
 import { BreakdownSelect, MetricOptions, breakdownOptions } from "./shared.jsx";
 
-function ComparePanel({ data }) {
+export function ComparePanel({ data }) {
   const { open } = useDrawer();
   const rows = [];
   for (const c of data.companies) {
@@ -21,22 +21,24 @@ function ComparePanel({ data }) {
     + (data.dimensions.length ? ` · ${breakdownLabel(data.dimensions)}` : "")
     + (data.fiscal_year ? ` · ${fy(data.fiscal_year)}` : " · all years");
   let chart = null;
-  if (data.fiscal_year && data.comparable && data.units.length === 1) {
+  if (data.fiscal_year && data.comparable && data.units.length === 1 && rows.some((r) => isComparable(r.v))) {
     const unit = data.units[0];
     chart = (
       <>
         <div className="small muted">{`Normalised values in ${unitLabel(unit)}. Companies without a comparable value are labelled, not drawn.`}</div>
         <BarChart title="Comparison" unit={unitLabel(unit)} items={rows.map((r) => {
           const label = r.c.nse_symbol || r.c.legal_name;
-          if (r.v && r.v.value_numeric !== null) {
+          if (r.v && isComparable(r.v)) {
             return { label: r.v.concept && rows.filter((x) => x.c === r.c).length > 1 ? `${label} · ${r.v.concept}` : label,
               value: r.v.value_numeric, text: r.v.value, calc: r.v.value_basis.startsWith("CALCULATED") };
           }
-          if (r.v) return { label, value: null, note: "not normalised (unit missing or ambiguous)" };
+          if (r.v) return { label, value: null, note: `not comparable: ${((PUBLICATION[r.v.publication_status] || [r.v.publication_status || "not normalised"])[0]).toLowerCase()}` };
           return { label, value: null, note: (DISCLOSURE[r.missing?.disclosure_status] || ["not available"])[0].toLowerCase() };
         })} />
       </>
     );
+  } else if (data.fiscal_year && data.comparable && data.units.length <= 1) {
+    chart = <p className="note">Chart not shown: no selected company has a comparable value for this metric (see the status column).</p>;
   } else if (!data.comparable) {
     chart = <p className="note">{`Chart not shown: normalised units differ (${data.units.join(", ")}); values are not compared as equivalent.`}</p>;
   } else if (!data.fiscal_year) {
@@ -86,7 +88,7 @@ export function Compare({ state, params, navigate }) {
   const selected = (params.get("companies") || state.company.company.company_id).split(",").filter(Boolean);
   const selKey = selected.join(",");
   const fyRequested = params.get("fy");
-  const go = (patch) => navigate({ metric, breakdown, fy: fyRequested ?? state.year.fiscal_year, companies: selKey, ...patch });
+  const go = (patch, opts) => navigate({ metric, breakdown, fy: fyRequested ?? state.year.fiscal_year, companies: selKey, ...patch }, opts);
 
   // years of every selected company (cached company records)
   const cos = useAsync(() => Promise.all(selected.map((id) => api.company(id))), selKey, { enabled: selected.length > 0 });
@@ -103,13 +105,13 @@ export function Compare({ state, params, navigate }) {
       .map((y) => [c.company.company_id, y.fiscal_year]));
   }
   const fyRedirect = !!cos.data && fyRequested !== null && fySel !== fyRequested;
-  useEffect(() => { if (fyRedirect) go({ fy: fySel }); }, [fyRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (fyRedirect) go({ fy: fySel }, { replace: true }); }, [fyRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // breakdowns reported by the selected companies for the metric
   const opts = useAsync(() => breakdownOptions(state.catalog, metric, pairs), `${metric}|${fySel}|${selKey}`,
     { enabled: !!cos.data && !fyRedirect });
   const bdRedirect = !!opts.data && opts.data.length > 0 && !opts.data.some(([v]) => v === breakdown);
-  useEffect(() => { if (bdRedirect) go({ fy: fySel, breakdown: opts.data[0][0] }); }, [bdRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (bdRedirect) go({ fy: fySel, breakdown: opts.data[0][0] }, { replace: true }); }, [bdRedirect]); // eslint-disable-line react-hooks/exhaustive-deps
   const ready = !!opts.data && !bdRedirect;
   const result = useAsync(() => api.compare(metric, selected, fySel || undefined, breakdown),
     `${metric}|${selKey}|${fySel}|${breakdown}`, { enabled: ready });

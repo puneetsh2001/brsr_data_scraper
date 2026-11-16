@@ -192,5 +192,5 @@ tr.clickable:hover td { background: #fafcfd; }
   .card .value { font-size: 18px; }
 }
 
-/* React mount point keeps the page layout of the previous UI */
+/* React mount point: page layout (header, tabs, main, footer) */
 #root { display: flex; flex-direction: column; min-height: 100vh; }

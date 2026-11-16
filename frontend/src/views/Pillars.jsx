@@ -1,5 +1,5 @@
 import { api } from "../lib/api.js";
-import { fy, unitLabel } from "../lib/format.js";
+import { PUBLICATION, fy, isComparable, unitLabel } from "../lib/format.js";
 import { useAsync } from "../lib/useAsync.js";
 import { AsyncView, Empty, SectionTitle, Spacer } from "../components/common.jsx";
 import { BarChart } from "../components/BarChart.jsx";
@@ -15,12 +15,14 @@ function EnergyChart({ groups }) {
   const items = groups.filter((g) => g.expected_unit === "energy")
     .map((g) => ({ label: g.metric_name, v: g.values.find((x) => !x.breakdown) || g.values[0] }));
   if (!items.length) return null;
-  const units = new Set(items.filter((i) => i.v.value_numeric !== null).map((i) => i.v.unit));
-  const allNormalised = items.every((i) => i.v.value_numeric !== null);
-  if (units.size !== 1 || !allNormalised) {
+  const blocked = items.filter((i) => !isComparable(i.v));
+  const units = new Set(items.filter((i) => isComparable(i.v)).map((i) => i.v.unit));
+  if (blocked.length || units.size !== 1) {
+    const why = [...new Set(blocked.map((i) => (PUBLICATION[i.v.publication_status] || [i.v.publication_status])[0]))];
     return (
-      <p className="note">Energy chart not shown: one or more energy values are not normalised to a common unit
-        {" "}(see the table). Values are never combined across different or unknown units.</p>
+      <p className="note">Energy chart not shown: one or more energy values are not comparable
+        {why.length ? ` (${why.join("; ")})` : " (different units)"}. See the table; values are never combined
+        {" "}across different, unknown or unapproved units.</p>
     );
   }
   const unit = [...units][0];

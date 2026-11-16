@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BASIS, DISCLOSURE, breakdownLabel, displayValue, formatNumber, fy, unitLabel, unitTitle } from "../lib/format.js";
+import { BASIS, DISCLOSURE, PUBLICATION, breakdownLabel, displayValue, formatNumber, fy, unitLabel, unitTitle } from "../lib/format.js";
 import { Badge, SafeLink, ValueBadges } from "./common.jsx";
 
 function Kv({ pairs }) {
@@ -39,6 +39,17 @@ function DrawerBody({ v, onClose, closeRef }) {
         ["Normalisation status", v.normalisation_status],
         ["Note", v.normalisation_note],
         ["Period", v.period ? [v.period.start, v.period.end].filter(Boolean).join(" to ") || v.period.instant : undefined],
+      ]} />
+      <h3>Publication</h3>
+      <Kv pairs={[
+        ["Publication status", v.publication_status ? <Badge table={PUBLICATION} code={v.publication_status} /> : undefined],
+        ["Used in charts and comparisons", v.comparable === undefined ? undefined : (v.comparable ? "Yes" : "No")],
+        ["Withheld", v.withheld ? [v.withheld.value !== undefined && v.withheld.value !== null
+          ? `${formatNumber(v.withheld.value) ?? v.withheld.value} ${v.withheld.unit ? unitLabel(v.withheld.unit) : ""} — ` : "", v.withheld.reason].join("") : undefined],
+        ["Scale review", v.scale_review ? [v.scale_review.record_id, v.scale_review.status,
+          v.scale_review.recommended_decision ? `recommended ${v.scale_review.recommended_decision}` : null,
+          v.scale_review.proposed_value ? `proposed value ${v.scale_review.proposed_value}` : null,
+          v.scale_review.note].filter(Boolean).join(" · ") : undefined],
       ]} />
       {v.calculation ? (
         <>

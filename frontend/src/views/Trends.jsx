@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { api } from "../lib/api.js";
-import { DISCLOSURE, breakdownLabel, displayValue, formatNumber, fy, unitLabel, unitTitle } from "../lib/format.js";
+import { DISCLOSURE, PUBLICATION, breakdownLabel, displayValue, formatNumber, fy, isComparable, unitLabel, unitTitle } from "../lib/format.js";
 import { useAsync } from "../lib/useAsync.js";
 import { useDrawer } from "../lib/drawer.js";
 import { AsyncView, Badge, ErrorState, Loading, SectionTitle, ValueBadges } from "../components/common.jsx";
@@ -10,7 +10,7 @@ import { BreakdownSelect, MetricOptions, breakdownOptions } from "./shared.jsx";
 function HistoryPanel({ data }) {
   const { open } = useDrawer();
   const rows = data.series.map((s) => ({ fy: s.fiscal_year, vals: s.values, missing: s.missing }));
-  const numeric = rows.filter((r) => r.vals.length === 1 && r.vals[0].value_numeric !== null);
+  const numeric = rows.filter((r) => r.vals.length === 1 && isComparable(r.vals[0]));
   const multi = rows.some((r) => r.vals.length > 1);
   let chart;
   if (!data.comparable) {
@@ -24,14 +24,14 @@ function HistoryPanel({ data }) {
         <div className="small muted">{`Normalised values (${unitLabel(unit)}); years without a comparable value are labelled, not drawn.`}</div>
         <BarChart title="History" unit={unitLabel(unit)} items={rows.map((r) => {
           const v = r.vals[0];
-          if (v && v.value_numeric !== null) return { label: fy(r.fy), value: v.value_numeric, text: v.value, calc: v.value_basis.startsWith("CALCULATED") };
-          if (v) return { label: fy(r.fy), value: null, note: `not normalised (filed ${formatNumber(v.reported_value) ?? v.reported_value} ${v.reported_unit ? unitLabel(v.reported_unit, true) : "without unit"})` };
+          if (v && isComparable(v)) return { label: fy(r.fy), value: v.value_numeric, text: v.value, calc: v.value_basis.startsWith("CALCULATED") };
+          if (v) return { label: fy(r.fy), value: null, note: `not comparable: ${((PUBLICATION[v.publication_status] || [v.publication_status || "not normalised"])[0]).toLowerCase()} (filed ${formatNumber(v.reported_value) ?? v.reported_value ?? "withheld"} ${v.reported_unit ? unitLabel(v.reported_unit, true) : ""})`.replace(/ \)$/, ")") };
           return { label: fy(r.fy), value: null, note: (DISCLOSURE[r.missing?.disclosure_status] || ["not available"])[0].toLowerCase() };
         })} />
       </>
     );
   } else {
-    chart = <p className="note">No normalised numeric values to chart.</p>;
+    chart = <p className="note">No comparable values to chart (see the publication status of each year in the table).</p>;
   }
   return (
     <section className="panel">
@@ -82,7 +82,7 @@ export function Trends({ state, params, navigate }) {
   const mismatch = opts.data && opts.data.length > 0 && !opts.data.some(([v]) => v === breakdown);
   useEffect(() => {
     // a metric with breakdowns has no total value: default to the first one
-    if (mismatch) navigate({ metric, breakdown: opts.data[0][0] });
+    if (mismatch) navigate({ metric, breakdown: opts.data[0][0] }, { replace: true });
   }, [mismatch]); // eslint-disable-line react-hooks/exhaustive-deps
   const ready = !!opts.data && !mismatch;
   const history = useAsync(() => api.history(id, metric, breakdown), `${id}|${metric}|${breakdown}`, { enabled: ready });

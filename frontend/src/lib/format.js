@@ -77,6 +77,31 @@ export const BASIS = {
     "The filed unit is missing, ambiguous or awaiting a decision; only the filed value is shown."],
 };
 
+// publication_status from the API: only the PUBLISHED* statuses are
+// comparable (charts, comparisons, summary calculations)
+export const PUBLICATION = {
+  PUBLISHED: ["Published", "b-ok", "Reported and normalised; used in charts and comparisons."],
+  PUBLISHED_APPROVED_DECISION: ["Published: approved decision", "b-calc",
+    "Normalised under an owner-approved unit decision; used in charts and comparisons."],
+  DEFERRED_DATA_QUALITY: ["Deferred data-quality issue", "b-warn",
+    "Linked to an open deferred data-quality issue; shown as filed and excluded from charts and comparisons."],
+  PENDING_SCALE_REVIEW: ["Suspected scale error — pending decision", "b-warn",
+    "A filer scale-error record is awaiting an owner decision; the filed value is shown and it is not compared."],
+  PENDING_CROSSWALK_REVIEW: ["Pending crosswalk review", "b-warn",
+    "Reached this metric only through a candidate concept mapping; not compared."],
+  PENDING_UNIT_DECISION: ["Pending unit decision", "b-warn",
+    "The filed unit is ambiguous and awaits an owner decision; the filed value is shown, not compared."],
+  FLAGGED_RESTATEMENT_DIFFERS: ["Flagged: restatement differs", "b-warn",
+    "The unit interpretation is flagged because a later restatement differs; not verified, not compared."],
+  UNDETERMINED_UNIT: ["Undetermined unit — manual review", "b-warn",
+    "The unit could not be determined; the filed value is shown, not compared."],
+  NOT_NORMALISED: ["Not comparable: unit not normalised", "b-na",
+    "The filed unit is missing or ambiguous; the filed value is shown, not compared."],
+  TEXT_VALUE: ["Text value", "b-na", "Text disclosure; not a number."],
+};
+
+export const isComparable = (v) => !!(v && v.comparable && v.value_numeric !== null && v.value_numeric !== undefined);
+
 export function info(table, code) {
   return table[code] || [code || "Unknown", "b-na", ""];
 }
@@ -101,6 +126,9 @@ export function displayValue(v) {
     const isNum = v.value_numeric !== null && v.value_numeric !== undefined;
     return { text: isNum ? formatNumber(v.value) : String(v.value),
              unit: isNum ? unitLabel(v.unit) : "", rawUnit: isNum ? v.unit || "" : "", missing: false };
+  }
+  if (v.withheld && (v.reported_value === null || v.reported_value === undefined)) {
+    return { text: "Withheld", unit: "", missing: false, withheld: true };
   }
   if (v.reported_value !== undefined && v.reported_value !== null && v.reported_value !== "") {
     return { text: formatNumber(v.reported_value) ?? v.reported_value,

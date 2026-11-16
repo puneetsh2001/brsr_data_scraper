@@ -31,6 +31,7 @@ VALUE_COLUMNS = """rv.requirement_id, rv.pillar, rv.metric_key, rv.breakdown,
     rv.conversion_note, rv.needs_review, rv.unit_decision, rv.filing_id,
     ca.multiplier_basis, ca.pending_review, ca.deferred_issue_ids,
     ca.scale_decision_id, ca.scale_decision_outcome,
+    ca.scale_recommended_decision, ca.scale_proposed_value,
     ca.unit_assumption_outcome, f.submission_date, f.reporting_period_start,
     f.reporting_period_end, f.xbrl_url, f.pdf_url, f.filing_version_status,
     f.version_number"""

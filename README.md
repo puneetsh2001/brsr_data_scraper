@@ -342,11 +342,24 @@ Then open http://localhost:8000/app/.
   - The endpoints are under `/api/`; the full list is at `/docs`.
   - Metric availability is listed in
     [docs/METRIC_AVAILABILITY.md](docs/METRIC_AVAILABILITY.md).
-- **Frontend (React).** The frontend is in `frontend/`: React 19 and Vite 8,
-  in plain JavaScript (JSX). It has no runtime libraries besides React, and
-  its charts are inline SVG. The API serves the production build
-  (`frontend/dist`) at `/app/`. The React app talks only to the API, never
-  to PostgreSQL.
+- **Frontend (React).** The frontend is in `frontend/`: React 19, React
+  Router 8 and Vite 8, in plain JavaScript (JSX). It has no other runtime
+  libraries, and its charts are inline SVG. It is the only UI. The API
+  serves the production build (`frontend/dist`) at `/app/`. The React app
+  talks only to the API, never to PostgreSQL.
+  - **Routes** use browser history under the basename `/app`:
+    - `/app/` lists the companies.
+    - `/app/c/<company>` opens the latest processed year.
+    - `/app/c/<company>/<fy>` opens the overview of that year.
+    - `/app/c/<company>/<fy>/<tab>?<params>` opens a screen. The tabs are
+      overview, environmental, social, governance, trends, compare and
+      quality. The parameters are `metric`, `breakdown`, `fy` and
+      `companies`.
+
+    The API returns `index.html` for every `/app/...` path that is not a
+    build file, so direct links, bookmarks and page refreshes work. Missing
+    files under `/app/assets/` return 404. Bookmarks of the earlier hash
+    URLs (`/app/#/c/...`) are redirected.
   - **Node.js:** v26.13.0 LTS (Node 22.22 or later is required).
     Download the zip from https://nodejs.org/dist/v26.13.0/ and check it
     against `SHASUMS256.txt` from the same folder. In development it is
@@ -368,9 +381,6 @@ Then open http://localhost:8000/app/.
     - `locale`.
   - **No hard-coded data.** No company, value, year or status is hard-coded.
     Everything comes from the API.
-  - **Previous UI.** The previous HTML/JS UI (`app/frontend/`) is kept,
-    served at `/legacy/`, until the React UI is accepted. If no React build
-    exists, `/app/` falls back to it.
 - **CORS.** CORS is not needed when the UI is served by the API. To call the
   API from another origin, set `apiBase` and start the API with
   `BRSR_CORS_ORIGINS=http://host:port` (comma-separated). Only GET is
@@ -397,9 +407,9 @@ Then open http://localhost:8000/app/.
     React build is current.
   - `tests/test_frontend_ui.py` drives headless Chrome or Edge against the
     running API and compares every displayed value with the API response.
-    Every test runs against both UIs, `/app` (React) and `/legacy`; set
-    `BRSR_UI_PATHS` to choose. It is skipped when no browser or database is
-    available.
+    It also covers routing: deep links, refresh, back/forward, unknown
+    routes, and that no file of the previous UI is served. It is skipped when
+    no browser or database is available.
 
 ## Tests
 
